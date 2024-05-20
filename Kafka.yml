@@ -1,3 +1,49 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  labels:
+    app: zookeeper
+spec:
+  ports:
+    - port: 2181
+      name: client
+  selector:
+    app: zookeeper
+---
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: confluentinc/cp-zookeeper:latest
+        ports:
+        - containerPort: 2181
+          name: client
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: "2181"
+        - name: ZOOKEEPER_TICK_TIME
+          value: "2000"
+        volumeMounts:
+        - name: zookeeper-data
+          mountPath: /var/lib/zookeeper
+      volumes:
+      - name: zookeeper-data
+        emptyDir: {}
+
 If you want to remove Fluentd configuration from the Kafka broker pods, you can simplify the YAML by removing the Fluentd sidecar containers. Here's the updated configuration without Fluentd:
 
 yaml
