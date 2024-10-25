@@ -1,0 +1,88 @@
+If your AWS Lambda function requires fetching external data (such as API responses, configurations, etc.) that needs to be refreshed on every invocation, using CraC may not be the best fit. CraC's primary use case is to checkpoint the application state, so that you can avoid repeating initialization processes (like HTTP requests, database connections, or heavy computations). However, if the data needs to be fetched and updated for every invocation, checkpointing the state after fetching the data would not help since the data would be stale for subsequent invocations.
+
+Key Points:
+CraC is not suitable if the external data needs to be refreshed for every Lambda invocation.
+Each invocation should handle the HTTP request or data-fetching process independently if fresh data is required every time.
+Alternative Approaches to Handle Frequent Data Fetching in Lambda:
+If you need to refresh data for every invocation, consider the following best practices to optimize performance and handle the data-fetching process efficiently:
+
+1. Make the HTTP Call Inside the Handler
+You can perform the HTTP request directly inside the Lambda handler for every invocation, ensuring that fresh data is fetched every time.
+
+Example of how to make an HTTP call in your Lambda function handler:
+
+java
+Copy code
+package com.example;
+
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Scanner;
+
+public class LambdaHandler implements RequestHandler<Object, String> {
+
+    @Override
+    public String handleRequest(Object input, Context context) {
+        // Fetch the latest configuration or data from an external API
+        String data = fetchConfigurationFromApi();
+
+        // Use the fetched data for the invocation
+        return "Lambda executed with latest data: " + data;
+    }
+
+    private String fetchConfigurationFromApi() {
+        StringBuilder configData = new StringBuilder();
+        try {
+            // Example HTTP call to fetch configuration
+            URL url = new URL("https://example.com/config");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            Scanner scanner = new Scanner(connection.getInputStream());
+            while (scanner.hasNextLine()) {
+                configData.append(scanner.nextLine());
+            }
+            scanner.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return configData.toString();
+    }
+}
+In this case, the function will fetch new data for every invocation, ensuring the latest configuration or API response is used. This approach ensures that you always have fresh data, but it can increase cold start latency and execution time, especially if the HTTP call is slow.
+
+2. Optimize the HTTP Call or Data Fetching Mechanism
+Timeout Settings: Ensure you are using appropriate timeout settings for the HTTP request, so that your function doesn't hang on slow or unresponsive external services.
+Retry Logic: Implement retry logic to handle transient failures.
+Concurrent Calls (Async Execution): If possible, make non-blocking or asynchronous calls to fetch data to reduce overall execution time.
+3. Use a Cache or Intermediate Storage (e.g., Amazon S3, DynamoDB, or Redis)
+If the external data doesn’t need to be 100% real-time, you can implement a caching mechanism. This would involve:
+
+Pre-fetching or caching the data in a persistent store like Amazon S3, DynamoDB, or ElastiCache (Redis).
+Your Lambda function would check the cache before making an HTTP request. If the cached data is fresh (e.g., updated within the last minute), the function can use it; otherwise, it can fetch new data from the external source.
+This approach minimizes repeated HTTP requests while ensuring relatively fresh data. Example steps:
+
+Fetch from the cache (e.g., S3 or Redis).
+If the cache is outdated, make the HTTP call and update the cache.
+4. Leverage Lambda Layers for Shared Dependencies
+If your HTTP call involves heavy libraries or dependencies (e.g., complex authentication or parsing libraries), consider using AWS Lambda Layers to reduce the size of your deployment package and reuse these shared libraries across multiple Lambda functions. This won't reduce the data-fetching overhead directly but can help optimize deployment and cold start time.
+
+5. Invoke Lambda Periodically (Using CloudWatch Events or EventBridge)
+If your external data only needs to be refreshed periodically, you can decouple the data-fetching process from your core Lambda function logic. You can create a separate Lambda function (or use the same Lambda) that is triggered periodically (using CloudWatch Events or Amazon EventBridge) to:
+
+Fetch the data and store it in S3, DynamoDB, or Redis.
+Your main Lambda function can read the pre-fetched data from storage instead of making the HTTP call on every invocation.
+For example, you could schedule a Lambda to fetch data from the external API every 10 minutes, and store the result in S3. When your primary Lambda function runs, it retrieves the latest data from S3 rather than directly querying the external API.
+
+6. Use Amazon API Gateway Caching
+If your Lambda function is invoked via an API Gateway, and the HTTP response from the external service remains valid for a short time, you can leverage API Gateway caching. API Gateway will cache responses from your Lambda function, reducing the frequency of calls to the external service.
+
+Conclusion:
+If your AWS Lambda function needs to refresh external data (like API responses or configurations) on every invocation, CraC is not appropriate because it checkpoints and restores the state, which may lead to stale data on subsequent invocations. Instead, you should:
+
+Make HTTP calls inside the Lambda handler to ensure fresh data.
+Use caching, retry logic, or periodic invocations to optimize performance and reduce cold-start latency.
+This approach ensures that your Lambda function will always have access to up-to-date data while minimizing unnecessary HTTP calls when caching or scheduling strategies are applicable.
