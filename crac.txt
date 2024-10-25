@@ -1,0 +1,58 @@
+CraC (Coordinated Restore at Checkpoint) is a technology designed to reduce startup time by allowing applications to be restored from a checkpoint, rather than starting from scratch. While CraC is an evolving feature for Java applications (available in newer OpenJDK versions), combining it with AWS Lambda (which is designed for short-lived, stateless functions) is a bit unconventional, since Lambda functions are usually designed to start quickly and run stateless workloads. However, CraC can be beneficial in reducing cold start latency in certain scenarios.
+a checkpoint refers to capturing the state of a running Java application (including the heap, threads, file descriptors, etc.) at a specific moment in time. The idea is that once a checkpoint is created, the application can be "paused" and its state saved to disk. Later, instead of restarting the application from scratch, it can be "restored" from the saved checkpoint, allowing it to resume execution from that exact point.
+AWS Lambda functions are stateless by design, and every new invocation (especially during a cold start) involves starting a new execution environment, initializing resources, and potentially performing costly operations (like external HTTP calls). CraC can help by allowing you to "checkpoint" after performing such setup and external calls so that subsequent invocations can resume from that checkpoint, skipping the initialization process.
+Key Points:
+Initialization Phase (Including HTTP Call): When the Lambda container is first created, the HTTP call is made, and the result is cached in memory (configData).
+Checkpoint Created: CraC creates a checkpoint after the HTTP call and caches the result.
+Restoration on Cold Starts: If the Lambda container is restarted (cold start), CraC restores the function from the checkpoint, meaning the HTTP call is not repeated.
+Subsequent Invocations: Subsequent invocations use the restored state (configData), reducing latency since the HTTP call doesn't need to be made again.
+
+
+If your AWS Lambda function requires fetching external data (such as API responses, configurations, etc.) that needs to be refreshed on every invocation, using CraC may not be the best fit. CraC's primary use case is to checkpoint the application state, so that you can avoid repeating initialization processes (like HTTP requests, database connections, or heavy computations). However, if the data needs to be fetched and updated for every invocation, checkpointing the state after fetching the data would not help since the data would be stale for subsequent invocations.
+
+Key Points:
+CraC is not suitable if the external data needs to be refreshed for every Lambda invocation.
+Each invocation should handle the HTTP request or data-fetching process independently if fresh data is required every time.
+
+
+Spike: 
+To manage dynamic or changing data in an AWS Lambda function when using CRaC (Coordinated Restore at Checkpoint), you would need a mechanism to control when to take new checkpoints, ensuring that the restored state contains up-to-date data (e.g., fresh API responses or configurations). Below is a conceptual example of how you can achieve this, where the Lambda function needs to fetch updated data (like API responses) periodically and take a new checkpoint after the update.
+
+Scenario
+Suppose you have an AWS Lambda function that needs to fetch data from an external API. The API data is valid for 10 minutes before it needs to be refreshed. You want to take a CRaC checkpoint after the data is fetched, but you also want to ensure that the data is refreshed and a new checkpoint is taken every 10 minutes.
+
+AWS Lambda does warm starts by reusing the JVM, keeping the same execution environment alive, but it might not always align with CRaC’s model of checkpointing and restoring application state.
+
+Lambda’s Warm Starts: After the first invocation, Lambda reuses the environment, skipping initialization. However, this might not cause a true CRaC restore. It could simply mean that Lambda is keeping the process alive without triggering CRaC’s restore mechanism.
+How CRaC and Lambda might behave differently:
+Checkpoint (beforeCheckpoint): Lambda is allowing you to take a checkpoint before the next invocation.
+Restore (afterRestore): Lambda might not be "restoring" the environment from a CRaC perspective because the JVM or process isn't fully stopped and started again; instead, it's keeping everything in memory (warm start).
+
+
+
+
+
+
+
+
+
+
+
+Lambda Extensions can also be a useful approach to manage external dependencies and control functionality like making HTTP calls or fetching data in the background while keeping your Lambda function's code clean and lightweight. Extensions allow you to run additional code (such as fetching data or logging) before, during, and after the Lambda function execution.
+
+Extensions can be particularly helpful when you need to:
+
+Pre-fetch configuration or data before invoking the Lambda handler.
+Background HTTP requests or other tasks without impacting your Lambda function's runtime.
+Add caching mechanisms that run outside of the Lambda handler execution lifecycle.
+What Are Lambda Extensions?
+AWS Lambda Extensions are a way to extend the Lambda execution environment. You can write extensions to integrate monitoring agents, security scanners, or other utilities, but you can also use them for other tasks, such as fetching external data in the background.
+
+Lambda Extensions work by running processes side-by-side with the Lambda function:
+
+External Process: Runs outside the handler and can be triggered before, during, or after your function runs.
+Shared Memory: The extension can share state with the Lambda function through files, environment variables, or IPC.
+Key Use Cases for Lambda Extensions in Your Scenario
+Pre-fetch Data Before Handler Execution: You can make HTTP calls or fetch configurations from external APIs before the function's handler starts.
+Background Tasks: Offload long-running or asynchronous tasks (like logging, telemetry, or data collection) to the extension so that they don’t affect the main function’s execution time.
+Caching: Maintain cached copies of API responses or configurations so that repeated invocations of your function can reuse previously fetched data without making unnecessary HTTP calls.
