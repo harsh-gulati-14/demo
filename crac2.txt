@@ -1,0 +1,8 @@
+If your AWS Lambda function requires fetching external data (such as API responses, configurations, etc.) that needs to be refreshed on every invocation, using CraC may not be the best fit. CraC's primary use case is to checkpoint the application state, so that you can avoid repeating initialization processes (like HTTP requests, database connections, or heavy computations). However, if the data needs to be fetched and updated for every invocation, checkpointing the state after fetching the data would not help since the data would be stale for subsequent invocations.
+
+CRaC (Coordinated Restore at Checkpoint) addresses cold start by taking a checkpoint of the running application at a point where the environment has already been initialized. When the function is invoked again (which would normally cause a cold start), instead of going through the whole initialization process again, CRaC restores the application state from the checkpoint, thus skipping expensive initialization.
+
+What CRaC Does:
+Initialization happens once: You initialize the runtime, load your dependencies, and set up any external resources or configurations once.
+Take a Checkpoint: Using CRaC, you take a snapshot (checkpoint) of this initialized state.
+Subsequent cold starts use the checkpoint: On future invocations, instead of re-initializing the environment, CRaC restores the Lambda function from the previously taken checkpoint, skipping most of the cold start work.
