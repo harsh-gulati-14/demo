@@ -1,0 +1,32 @@
+Test harness
+
+I recently contributed to the implementation of Kafka Virtualization on Post Deployment. This task involved leveraging the capabilities of the Test Harness to create an abstracted and reusable Kubernetes design. The primary goal was to develop a scalable architecture that could accommodate multiple features in the future, enhancing efficiency and flexibility.
+
+The challenge was to seamlessly integrate Kafka virtualization post-deployment, ensuring robust communication and event management between components. I designed a Kubernetes abstraction layer, focusing on modularity and reusability. This abstracted design allows for easy incorporation of additional features without needing significant redesign, minimizing development overhead for future updates.
+
+The Test Harness played a pivotal role in the validation and testing phase, enabling rapid iteration and ensuring that the virtualized Kafka environments were fully functional in real-world scenarios.
+
+I focused heavily on design patterns, crafting strategies to ensure that the architecture was as abstracted as possible. This meant identifying reusable components and standardizing them within the Kubernetes framework to support a modular and scalable solution. The use of design patterns enabled a more structured approach to abstraction, facilitating seamless feature integration in the future.
+
+
+Support call
+
+In the subsequent month, I transitioned to a support role as a developer for two sprints. My focus was on providing hands-on assistance to users, participating actively in multiple office hours to address a wide array of concerns. A key responsibility involved helping users upgrade to the latest Photon framework versions, ensuring smooth transitions with minimal disruption to their workflows. This required not only a deep understanding of the framework's new features but also the ability to clearly communicate and guide users through complex upgrade processes.
+
+In addition, I collaborated closely with users to identify and raise defects, ensuring that any bugs or inconsistencies were documented and addressed promptly. My role also involved resolving various issues, from debugging code to recommending best practices, helping users optimize their systems in alignment with the latest updates. 
+
+Throughout these two sprints, I developed a strong rapport with the users, connecting with them regularly and becoming a trusted point of contact for their technical challenges. The effort I put into understanding and solving user-specific problems was recognized and appreciated by the customers, highlighting my commitment to delivering high-quality support. This experience not only solidified my technical skills but also enhanced my ability to communicate effectively with end-users, fostering a stronger developer-customer relationship.
+
+Leninet Producer production
+
+Recently, I collaborated with my senior lead to develop a feature called the **Lenient Resilient Producer**. This feature is designed to handle challenging network conditions, specifically targeting scenarios like Network Isolation Events. One pilot user, along with several other teams, have already deployed this feature in their production environments, utilizing it to maintain stability during network disruptions.
+
+Our primary responsibility was to build a robust solution that would be reliable under real-world conditions. To ensure its effectiveness, we conducted comprehensive verification in lower environments, rigorously testing various failure scenarios and edge cases. This meticulous validation was crucial for identifying potential issues early on and fine-tuning the feature to be as resilient as possible.
+
+By closely simulating network failures, we ensured that the Lenient Resilient Producer could handle disruptions without causing data loss or service interruptions. This effort not only led to a successful rollout but also demonstrated the feature's practicality in maintaining operational stability during unpredictable network conditions.
+
+
+LAMBDA PCC
+
+I am currently focusing on integrating **AWS Lambda** with the **PCC SDK**. This involves conducting multiple research spikes to explore the most effective and efficient way to achieve a seamless integration. My goal is to identify the optimal design patterns and best practices that will ensure this integration is robust, scalable, and performs well under various conditions. This phase is critical as it lays the foundation for a successful and reliable solution, guiding future development efforts.
+
